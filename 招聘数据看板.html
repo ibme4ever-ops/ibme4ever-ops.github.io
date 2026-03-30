@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>杭州SME招聘进度看板</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  /* ============================================================
+     Design System (based on UI设计 skill guidelines)
+     - Style: Modern Corporate Dashboard
+     - Color: Professional Blue-Indigo palette
+     - Typography: System font stack, 16px base, 1.5 line-height
+     - Spacing: 8px rhythm system
+     - Layout: Card-based responsive grid
+     ============================================================ */
+  :root {
+    /* Semantic color tokens (Rule: color-semantic) */
+    --color-primary: #2563EB;
+    --color-primary-light: #3B82F6;
+    --color-primary-dark: #1D4ED8;
+    --color-secondary: #7C3AED;
+    --color-success: #059669;
+    --color-success-light: #10B981;
+    --color-warning: #D97706;
+    --color-warning-light: #F59E0B;
+    --color-danger: #DC2626;
+    --color-danger-light: #EF4444;
+    --color-info: #0891B2;
+
+    /* Surface & Text */
+    --bg-page: #F1F5F9;
+    --bg-card: #FFFFFF;
+    --bg-card-hover: #F8FAFC;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-tertiary: #94A3B8;
+    --border-color: #E2E8F0;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+
+    /* Spacing: 8px rhythm (Rule: spacing-scale) */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+
+    /* Border radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+  }
+
+  /* Dark mode tokens (Rule: dark-mode-pairing) */
+  [data-theme="dark"] {
+    --bg-page: #0F172A;
+    --bg-card: #1E293B;
+    --bg-card-hover: #334155;
+    --text-primary: #F1F5F9;
+    --text-secondary: #94A3B8;
+    --text-tertiary: #64748B;
+    --border-color: #334155;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.3);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.4);
+  }
+
+  /* Reset & Base (Rule: readable-font-size >= 16px) */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    background: var(--bg-page);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #1E40AF 0%, #7C3AED 100%);
+    color: white;
+    padding: var(--space-6) var(--space-8);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.3);
+  }
+
+  .header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    font-size: 14px;
+    opacity: 0.9;
+  }
+
+  .theme-toggle {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+    font-family: inherit;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.25); }
+  .theme-toggle:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 2px;
+  }
+
+  /* Main container (Rule: container-width, mobile-first) */
+  .container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: var(--space-6);
+  }
+
+  /* KPI Row */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+
+  .kpi-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    text-align: center;
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+  }
+  .kpi-card:nth-child(1)::before { background: var(--color-primary); }
+  .kpi-card:nth-child(2)::before { background: var(--color-success); }
+  .kpi-card:nth-child(3)::before { background: var(--color-danger); }
+  .kpi-card:nth-child(4)::before { background: var(--color-warning); }
+  .kpi-card:nth-child(5)::before { background: var(--color-info); }
+  .kpi-card:nth-child(6)::before { background: var(--color-secondary); }
+
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .kpi-value {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: var(--space-1);
+    /* Use tabular figures (Rule: number-tabular) */
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* Chart grid */
+  .chart-grid {
+    display: grid;
+    gap: var(--space-6);
+    margin-bottom: var(--space-6);
+  }
+  .chart-grid.cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .chart-grid.cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .chart-grid.cols-1-2 {
+    grid-template-columns: 1fr 2fr;
+  }
+
+  /* Responsive breakpoints (Rule: breakpoint-consistency, mobile-first) */
+  @media (max-width: 1024px) {
+    .chart-grid.cols-2,
+    .chart-grid.cols-3,
+    .chart-grid.cols-1-2 {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 768px) {
+    .container { padding: var(--space-4); }
+    .header { padding: var(--space-4); }
+    .header h1 { font-size: 18px; }
+    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+    .kpi-value { font-size: 24px; }
+  }
+  @media (max-width: 480px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Card component */
+  .card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease-out;
+  }
+  .card:hover { box-shadow: var(--shadow-md); }
+
+  .card-header {
+    padding: var(--space-5) var(--space-6);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .card-badge {
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .badge-blue { background: #DBEAFE; color: #1D4ED8; }
+  .badge-green { background: #D1FAE5; color: #065F46; }
+  [data-theme="dark"] .badge-blue { background: #1E3A5F; color: #93C5FD; }
+  [data-theme="dark"] .badge-green { background: #064E3B; color: #6EE7B7; }
+
+  .card-body {
+    padding: var(--space-4);
+  }
+
+  /* Chart containers */
+  .chart-container {
+    width: 100%;
+    height: 400px;
+  }
+  .chart-container.tall { height: 480px; }
+  .chart-container.short { height: 340px; }
+
+  /* Team table */
+  .team-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .team-table th {
+    text-align: left;
+    padding: var(--space-3) var(--space-4);
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border-color);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .team-table td {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-color);
+    font-variant-numeric: tabular-nums;
+  }
+  .team-table tr:hover td {
+    background: var(--bg-card-hover);
+  }
+  .team-table .tag {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .tag-danger  { background: #FEE2E2; color: #991B1B; }
+  .tag-warning { background: #FEF3C7; color: #92400E; }
+  .tag-success { background: #D1FAE5; color: #065F46; }
+  [data-theme="dark"] .tag-danger  { background: #450A0A; color: #FCA5A5; }
+  [data-theme="dark"] .tag-warning { background: #451A03; color: #FCD34D; }
+  [data-theme="dark"] .tag-success { background: #064E3B; color: #6EE7B7; }
+
+  .progress-bar-bg {
+    width: 80px;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease-out;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: var(--space-8) 0 var(--space-6);
+    color: var(--text-tertiary);
+    font-size: 13px;
+  }
+
+  /* Animate on scroll (Rule: animation duration 150-300ms) */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(12px);
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+  @keyframes fadeIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .delay-1 { animation-delay: 0.05s; }
+  .delay-2 { animation-delay: 0.1s; }
+  .delay-3 { animation-delay: 0.15s; }
+  .delay-4 { animation-delay: 0.2s; }
+  .delay-5 { animation-delay: 0.25s; }
+  .delay-6 { animation-delay: 0.3s; }
+
+  /* Respect reduced motion (Rule: reduced-motion) */
+  @media (prefers-reduced-motion: reduce) {
+    .fade-in { animation: none; opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header" role="banner">
+    <div>
+      <h1>杭州SME招聘进度看板</h1>
+    </div>
+    <div class="header-meta">
+      <span>数据更新: 2026-03-23</span>
+      <span>目标: 3月31日满编</span>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换深色/浅色主题">切换主题</button>
+    </div>
+  </header>
+
+  <main class="container" role="main">
+    <!-- KPI Cards (Rule: direct-labeling, number-tabular) -->
+    <section class="kpi-grid" aria-label="关键指标">
+      <div class="kpi-card fade-in delay-1">
+        <div class="kpi-value" style="color: var(--color-primary)">57</div>
+        <div class="kpi-label">总HC编制</div>
+      </div>
+      <div class="kpi-card fade-in delay-2">
+        <div class="kpi-value" style="color: var(--color-success)">55</div>
+        <div class="kpi-label">在职人数</div>
+      </div>
+      <div class="kpi-card fade-in delay-3">
+        <div class="kpi-value" style="color: var(--color-danger)">4</div>
+        <div class="kpi-label">待离职</div>
+      </div>
+      <div class="kpi-card fade-in delay-4">
+        <div class="kpi-value" style="color: var(--color-warning)">6</div>
+        <div class="kpi-label">实际缺编</div>
+      </div>
+      <div class="kpi-card fade-in delay-5">
+        <div class="kpi-value" style="color: var(--color-info)">96%</div>
+        <div class="kpi-label">满编率</div>
+      </div>
+      <div class="kpi-card fade-in delay-6">
+        <div class="kpi-value" style="color: var(--color-secondary)">6</div>
+        <div class="kpi-label">累计入职</div>
+      </div>
+    </section>
+
+    <!-- Row 1: Funnel + Team Config -->
+    <section class="chart-grid cols-2">
+      <div class="card fade-in">
+        <div class="card-header">
+          <span class="card-title">招聘漏斗分析</span>
+          <span class="card-badge badge-blue">核心指标</span>
+        </div>
+        <div class="card-body">
+          <div id="chart-funnel" class="chart-container tall"></div>
+        </div>
+      </div>
+      <div class="card fade-in">
+        <div class="card-header">
+          <span class="card-title">各团队HC编制 vs 实际配置</span>
+          <span class="card-badge badge-green">团队视图</span>
+        </div>
+        <div class="card-body">
+          <div id="chart-team-bar" class="chart-container tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 2: Weekly Trend -->
+    <section class="chart-grid cols-1" style="margin-top: var(--space-6);">
+      <div class="card fade-in">
+        <div class="card-header">
+          <span class="card-title">每周招聘趋势（邀约 vs 到面 vs 到面率）</span>
+          <span class="card-badge badge-blue">趋势分析</span>
+        </div>
+        <div class="card-body">
+          <div id="chart-trend" class="chart-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 3: Heatmap + Urgency -->
+    <section class="chart-grid cols-2" style="margin-top: var(--space-6);">
+      <div class="card fade-in">
+        <div class="card-header">
+          <span class="card-title">各团队每周到面人数热力图</span>
+          <span class="card-badge badge-blue">绩效矩阵</span>
+        </div>
+        <div class="card-body">
+          <div id="chart-heatmap" class="chart-container"></div>
+        </div>
+      </div>
+      <div class="card fade-in">
+        <div class="card-header">
+          <span class="card-title">团队紧急度 & 缺编分析</span>
+          <span class="card-badge badge-green">风险视图</span>
+        </div>
+        <div class="card-body">
+          <div id="chart-urgency" class="chart-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 4: Radar + Table -->
+    <section class="chart-grid cols-2" style="margin-top: var(--space-6);">
+      <div class="card fade-in">
+        <div class="card-header">
+          <span class="card-title">各TL招聘综合能力雷达</span>
+          <span class="card-badge badge-blue">能力评估</span>
+        </div>
+        <div class="card-body">
+          <div id="chart-radar" class="chart-container"></div>
+        </div>
+      </div>
+      <div class="card fade-in">
+        <div class="card-header">
+          <span class="card-title">团队详情一览表</span>
+          <span class="card-badge badge-green">数据明细</span>
+        </div>
+        <div class="card-body" style="overflow-x:auto;">
+          <table class="team-table" role="table">
+            <thead>
+              <tr>
+                <th scope="col">团队</th>
+                <th scope="col">负责人</th>
+                <th scope="col">HC</th>
+                <th scope="col">在职</th>
+                <th scope="col">待离职</th>
+                <th scope="col">满编率</th>
+                <th scope="col">紧急度</th>
+              </tr>
+            </thead>
+            <tbody id="team-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    杭州SME招聘进度看板 &middot; 数据截至 2026-03-23 &middot; 目标截止 2026-03-31
+  </footer>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const TEAMS = [
+  { name: '销售一组', leader: '白金月', hc: 10, onJob: 10, leaving: 1, leavingDetail: '王晨、朱鑫星', joining: 0, urgency: '预警' },
+  { name: '销售二组', leader: '项楠欣', hc: 9,  onJob: 8,  leaving: 1, leavingDetail: '张蒙阳', joining: 0, urgency: '紧急' },
+  { name: '销售四组', leader: '贠海燕', hc: 10, onJob: 10, leaving: 0, leavingDetail: '', joining: 0, urgency: '达标' },
+  { name: '销售五组', leader: '黄涛',   hc: 10, onJob: 9,  leaving: 0, leavingDetail: '', joining: 0, urgency: '预警' },
+  { name: '销售六组', leader: '杨泽坚', hc: 9,  onJob: 9,  leaving: 1, leavingDetail: '黄炳亮', joining: 0, urgency: '预警' },
+  { name: '销售七组', leader: '刘茂铃', hc: 9,  onJob: 9,  leaving: 1, leavingDetail: '李雯雯', joining: 0, urgency: '预警' },
+];
+
+// Weekly data (all rows: TL + interns aggregated)
+const WEEKLY = [
+  { name: '2.24-2.28', invite: 25, actual: 5,  trial1: 4,  trial2: 0, accept: 0, reject: 0, join: 0 },
+  { name: '3.2-3.6',   invite: 42, actual: 19, trial1: 0,  trial2: 8, accept: 1, reject: 3, join: 0 },
+  { name: '3.9-3.13',  invite: 36, actual: 30, trial1: 12, trial2: 8, accept: 5, reject: 2, join: 6 },
+  { name: '3.16-3.20', invite: 24, actual: 18, trial1: 7,  trial2: 4, accept: 2, reject: 1, join: 0 },
+  { name: '3.23-3.27', invite: 5,  actual: 4,  trial1: 2,  trial2: 0, accept: 0, reject: 0, join: 0 },
+];
+
+// Team weekly actual attendance (TL only)
+const TEAM_WEEKLY_ACTUAL = [
+  // [2.24, 3.2, 3.9, 3.16, 3.23]
+  [0, 2, 2, 1, 0],  // 白金月
+  [1, 3, 2, 3, 0],  // 项楠欣
+  [0, 3, 3, 0, 0],  // 贠海燕
+  [1, 2, 1, 3, 0],  // 黄涛
+  [2, 3, 5, 3, 0],  // 杨泽坚
+  [2, 3, 4, 2, 0],  // 刘茂铃
+];
+
+// ============================================================
+// THEME
+// ============================================================
+let isDark = false;
+function toggleTheme() {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : '');
+  // Re-init all charts with new theme
+  initAllCharts();
+}
+
+function getTextColor() { return isDark ? '#CBD5E1' : '#334155'; }
+function getSubTextColor() { return isDark ? '#64748B' : '#94A3B8'; }
+function getAxisLineColor() { return isDark ? '#334155' : '#E2E8F0'; }
+function getBgColor() { return isDark ? '#1E293B' : '#FFFFFF'; }
+
+// ============================================================
+// CHART INSTANCES
+// ============================================================
+let charts = {};
+
+function initChart(id) {
+  if (charts[id]) { charts[id].dispose(); }
+  const el = document.getElementById(id);
+  charts[id] = echarts.init(el, null, { renderer: 'canvas' });
+  return charts[id];
+}
+
+// ============================================================
+// 1. FUNNEL CHART (Core requirement)
+// ============================================================
+function renderFunnel() {
+  const chart = initChart('chart-funnel');
+
+  // Aggregate funnel data
+  const totalInvite = WEEKLY.reduce((s, w) => s + w.invite, 0);
+  const totalActual = WEEKLY.reduce((s, w) => s + w.actual, 0);
+  const totalTrial = WEEKLY.reduce((s, w) => s + w.trial1 + w.trial2, 0);
+  const totalOffer = WEEKLY.reduce((s, w) => s + w.accept + w.reject, 0);
+  const totalAccept = WEEKLY.reduce((s, w) => s + w.accept, 0);
+  const totalJoin = WEEKLY.reduce((s, w) => s + w.join, 0);
+
+  const funnelData = [
+    { value: totalInvite, name: '邀约面试' },
+    { value: totalActual, name: '实际到面' },
+    { value: totalTrial,  name: '面试评估' },
+    { value: totalOffer,  name: '发出Offer' },
+    { value: totalAccept, name: '接受Offer' },
+    { value: totalJoin,   name: '成功入职' },
+  ];
+
+  // Ensure monotonically decreasing for visual
+  for (let i = 1; i < funnelData.length; i++) {
+    if (funnelData[i].value > funnelData[i-1].value) {
+      funnelData[i].value = funnelData[i-1].value;
+    }
+  }
+
+  const option = {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'item',
+      formatter: function(p) {
+        let rate = '';
+        if (p.dataIndex > 0) {
+          const prev = funnelData[p.dataIndex - 1].value;
+          rate = prev > 0 ? `<br/>环节转化率: ${(p.value / prev * 100).toFixed(1)}%` : '';
+        }
+        const overall = totalInvite > 0 ? `<br/>总转化率: ${(p.value / totalInvite * 100).toFixed(1)}%` : '';
+        return `<b>${p.name}</b><br/>人数: ${p.value}人${rate}${overall}`;
+      }
+    },
+    legend: { show: false },
+    series: [{
+      type: 'funnel',
+      left: '10%',
+      top: 30,
+      bottom: 40,
+      width: '80%',
+      min: 0,
+      max: totalInvite,
+      minSize: '10%',
+      maxSize: '100%',
+      sort: 'descending',
+      gap: 4,
+      label: {
+        show: true,
+        position: 'inside',
+        formatter: function(p) {
+          return `${p.name}\n${p.value}人`;
+        },
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#fff',
+        lineHeight: 22,
+      },
+      labelLine: { show: false },
+      itemStyle: {
+        borderColor: getBgColor(),
+        borderWidth: 2,
+      },
+      data: funnelData,
+      color: ['#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#EC4899', '#F43F5E'],
+      emphasis: {
+        label: { fontSize: 16 },
+        itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.2)' }
+      }
+    }],
+    graphic: [{
+      type: 'text',
+      left: 'center',
+      bottom: 5,
+      style: {
+        text: `总转化率: ${totalInvite > 0 ? (totalJoin / totalInvite * 100).toFixed(1) : 0}%  (${totalJoin}/${totalInvite})`,
+        fill: isDark ? '#F87171' : '#DC2626',
+        fontSize: 14,
+        fontWeight: 'bold',
+      }
+    }]
+  };
+
+  chart.setOption(option);
+}
+
+// ============================================================
+// 2. TEAM BAR CHART
+// ============================================================
+function renderTeamBar() {
+  const chart = initChart('chart-team-bar');
+  const names = TEAMS.map(t => t.name + '\n' + t.leader);
+
+  const option = {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: function(params) {
+        let s = `<b>${params[0].axisValue.replace('\n', ' - ')}</b><br/>`;
+        params.forEach(p => { s += `${p.marker} ${p.seriesName}: ${p.value}<br/>`; });
+        const t = TEAMS[params[0].dataIndex];
+        const gap = t.hc - t.onJob + t.leaving;
+        s += `<span style="color:#D97706;font-weight:bold">缺编: ${gap}人</span>`;
+        return s;
+      }
+    },
+    legend: {
+      data: ['HC编制', '在职人数', '待离职'],
+      top: 5,
+      textStyle: { color: getTextColor(), fontSize: 12 }
+    },
+    grid: { left: 20, right: 20, bottom: 20, top: 50, containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: names,
+      axisLabel: { color: getTextColor(), fontSize: 11, interval: 0 },
+      axisLine: { lineStyle: { color: getAxisLineColor() } },
+      axisTick: { show: false },
+    },
+    yAxis: {
+      type: 'value',
+      max: 12,
+      axisLabel: { color: getSubTextColor() },
+      splitLine: { lineStyle: { color: getAxisLineColor(), type: 'dashed' } },
+    },
+    series: [
+      {
+        name: 'HC编制', type: 'bar', barWidth: 20,
+        data: TEAMS.map(t => t.hc),
+        itemStyle: { color: '#3B82F6', borderRadius: [3,3,0,0] },
+        label: { show: true, position: 'top', color: getTextColor(), fontSize: 11, fontWeight: 'bold' }
+      },
+      {
+        name: '在职人数', type: 'bar', barWidth: 20,
+        data: TEAMS.map(t => t.onJob),
+        itemStyle: { color: '#10B981', borderRadius: [3,3,0,0] },
+        label: { show: true, position: 'top', color: getTextColor(), fontSize: 11, fontWeight: 'bold' }
+      },
+      {
+        name: '待离职', type: 'bar', barWidth: 20,
+        data: TEAMS.map(t => t.leaving),
+        itemStyle: { color: '#EF4444', borderRadius: [3,3,0,0] },
+        label: {
+          show: true, position: 'top', color: getTextColor(), fontSize: 11, fontWeight: 'bold',
+          formatter: p => p.value > 0 ? p.value : ''
+        }
+      },
+    ],
+    animationDuration: 800,
+    animationEasing: 'cubicOut',
+  };
+
+  chart.setOption(option);
+}
+
+// ============================================================
+// 3. WEEKLY TREND
+// ============================================================
+function renderTrend() {
+  const chart = initChart('chart-trend');
+  const weeks = WEEKLY.map(w => w.name);
+  const invites = WEEKLY.map(w => w.invite);
+  const actuals = WEEKLY.map(w => w.actual);
+  const rates = WEEKLY.map(w => w.invite > 0 ? +(w.actual / w.invite * 100).toFixed(1) : 0);
+
+  const option = {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'cross' },
+    },
+    legend: {
+      data: ['邀约面试', '实际到面', '到面率'],
+      top: 5,
+      textStyle: { color: getTextColor(), fontSize: 12 }
+    },
+    grid: { left: 20, right: 30, bottom: 20, top: 55, containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: weeks,
+      axisLabel: { color: getTextColor(), fontSize: 12 },
+      axisLine: { lineStyle: { color: getAxisLineColor() } },
+      axisTick: { show: false },
+      boundaryGap: true,
+    },
+    yAxis: [
+      {
+        type: 'value',
+        name: '人数',
+        nameTextStyle: { color: getSubTextColor() },
+        axisLabel: { color: getSubTextColor() },
+        splitLine: { lineStyle: { color: getAxisLineColor(), type: 'dashed' } },
+      },
+      {
+        type: 'value',
+        name: '到面率',
+        nameTextStyle: { color: '#D97706' },
+        axisLabel: { color: '#D97706', formatter: '{value}%' },
+        splitLine: { show: false },
+        max: 110,
+      }
+    ],
+    series: [
+      {
+        name: '邀约面试', type: 'bar', barWidth: 30,
+        data: invites,
+        itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[
+          {offset:0, color:'#60A5FA'}, {offset:1, color:'#3B82F6'}
+        ]), borderRadius: [4,4,0,0] },
+        label: { show: true, position: 'top', color: getTextColor(), fontSize: 12, fontWeight: 'bold' }
+      },
+      {
+        name: '实际到面', type: 'bar', barWidth: 30,
+        data: actuals,
+        itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[
+          {offset:0, color:'#34D399'}, {offset:1, color:'#10B981'}
+        ]), borderRadius: [4,4,0,0] },
+        label: { show: true, position: 'top', color: getTextColor(), fontSize: 12, fontWeight: 'bold' }
+      },
+      {
+        name: '到面率', type: 'line', yAxisIndex: 1,
+        data: rates,
+        lineStyle: { color: '#F59E0B', width: 3 },
+        itemStyle: { color: '#F59E0B', borderColor: '#fff', borderWidth: 2 },
+        symbolSize: 10,
+        label: {
+          show: true, position: 'top',
+          formatter: '{c}%',
+          color: '#D97706', fontSize: 12, fontWeight: 'bold'
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0,0,0,1,[
+            {offset:0, color:'rgba(245,158,11,0.15)'}, {offset:1, color:'rgba(245,158,11,0)'}
+          ])
+        }
+      }
+    ],
+    animationDuration: 1000,
+    animationEasing: 'cubicOut',
+  };
+
+  chart.setOption(option);
+}
+
+// ============================================================
+// 4. HEATMAP
+// ============================================================
+function renderHeatmap() {
+  const chart = initChart('chart-heatmap');
+  const weeks = WEEKLY.map(w => w.name);
+  const teamNames = TEAMS.map(t => t.leader);
+
+  // Build heatmap data: [weekIdx, teamIdx, value]
+  const data = [];
+  TEAM_WEEKLY_ACTUAL.forEach((teamData, tIdx) => {
+    teamData.forEach((val, wIdx) => {
+      data.push([wIdx, tIdx, val]);
+    });
+  });
+
+  const maxVal = Math.max(...data.map(d => d[2]));
+
+  const option = {
+    backgroundColor: 'transparent',
+    tooltip: {
+      formatter: function(p) {
+        const team = TEAMS[p.value[1]];
+        return `<b>${team.name} (${team.leader})</b><br/>${weeks[p.value[0]]}<br/>到面人数: <b>${p.value[2]}人</b><br/>目标: 4人/周`;
+      }
+    },
+    grid: { left: 20, right: 70, bottom: 20, top: 20, containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: weeks,
+      axisLabel: { color: getTextColor(), fontSize: 11 },
+      axisLine: { lineStyle: { color: getAxisLineColor() } },
+      axisTick: { show: false },
+      splitArea: { show: true, areaStyle: { color: [getBgColor(), isDark ? '#1a2332' : '#F8FAFC'] } }
+    },
+    yAxis: {
+      type: 'category',
+      data: teamNames,
+      axisLabel: { color: getTextColor(), fontSize: 12, fontWeight: 'bold' },
+      axisLine: { lineStyle: { color: getAxisLineColor() } },
+      axisTick: { show: false },
+    },
+    visualMap: {
+      min: 0, max: Math.max(maxVal, 5),
+      calculable: true,
+      orient: 'vertical',
+      right: 0, top: 'center',
+      inRange: {
+        color: isDark
+          ? ['#1E293B', '#1E3A5F', '#1D4ED8', '#F59E0B', '#EF4444']
+          : ['#EFF6FF', '#BFDBFE', '#3B82F6', '#F59E0B', '#EF4444']
+      },
+      textStyle: { color: getTextColor() },
+      itemWidth: 12,
+    },
+    series: [{
+      type: 'heatmap',
+      data: data,
+      label: {
+        show: true,
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: function(p) { return p.value[2] >= 3 ? '#fff' : getTextColor(); }
+      },
+      itemStyle: {
+        borderColor: getBgColor(),
+        borderWidth: 3,
+        borderRadius: 4,
+      },
+      emphasis: {
+        itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.3)' }
+      }
+    }],
+    animationDuration: 600,
+  };
+
+  chart.setOption(option);
+}
+
+// ============================================================
+// 5. URGENCY & GAP CHART (Combo: pie + bar)
+// ============================================================
+function renderUrgency() {
+  const chart = initChart('chart-urgency');
+
+  const urgencyMap = {};
+  TEAMS.forEach(t => { urgencyMap[t.urgency] = (urgencyMap[t.urgency] || 0) + 1; });
+
+  const urgencyColors = { '达标': '#10B981', '预警': '#F59E0B', '紧急': '#EF4444' };
+  const pieData = Object.entries(urgencyMap).map(([name, value]) => ({
+    name, value, itemStyle: { color: urgencyColors[name] }
+  }));
+
+  const gapData = TEAMS.map(t => ({
+    name: t.leader,
+    value: t.hc - t.onJob + t.leaving,
+    urgency: t.urgency,
+  }));
+
+  const option = {
+    backgroundColor: 'transparent',
+    tooltip: { trigger: 'item' },
+    grid: { left: 20, right: 20, bottom: 20, top: '55%', containLabel: true },
+    series: [
+      // Donut chart (top)
+      {
+        type: 'pie',
+        radius: ['30%', '45%'],
+        center: ['50%', '27%'],
+        label: {
+          formatter: '{b}\n{c}个团队 ({d}%)',
+          color: getTextColor(),
+          fontSize: 12,
+          fontWeight: 'bold',
+          lineHeight: 18,
+        },
+        labelLine: { lineStyle: { color: getSubTextColor() } },
+        data: pieData,
+        itemStyle: { borderColor: getBgColor(), borderWidth: 3 },
+        emphasis: {
+          scaleSize: 8,
+          label: { fontSize: 14 },
+          itemStyle: { shadowBlur: 15, shadowColor: 'rgba(0,0,0,0.2)' }
+        },
+        animationType: 'scale',
+        animationDuration: 800,
+      },
+      // Bar chart (bottom)
+      {
+        type: 'bar',
+        barWidth: 24,
+        data: gapData.map(d => ({
+          value: d.value,
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0,0,0,1,[
+              {offset:0, color: urgencyColors[d.urgency]},
+              {offset:1, color: urgencyColors[d.urgency] + '88'}
+            ]),
+            borderRadius: [4,4,0,0]
+          }
+        })),
+        label: {
+          show: true, position: 'top',
+          formatter: p => p.value + '人',
+          color: getTextColor(), fontSize: 12, fontWeight: 'bold'
+        },
+      }
+    ],
+    xAxis: {
+      type: 'category',
+      data: gapData.map(d => d.name),
+      axisLabel: { color: getTextColor(), fontSize: 12, fontWeight: 'bold' },
+      axisLine: { lineStyle: { color: getAxisLineColor() } },
+      axisTick: { show: false },
+      gridIndex: 0,
+    },
+    yAxis: {
+      type: 'value',
+      name: '缺编人数',
+      nameTextStyle: { color: getSubTextColor(), fontSize: 11 },
+      axisLabel: { color: getSubTextColor() },
+      splitLine: { lineStyle: { color: getAxisLineColor(), type: 'dashed' } },
+      gridIndex: 0,
+    },
+  };
+
+  chart.setOption(option);
+}
+
+// ============================================================
+// 6. RADAR CHART
+// ============================================================
+function renderRadar() {
+  const chart = initChart('chart-radar');
+
+  const indicators = [
+    { name: '累计邀约', max: 15 },
+    { name: '累计到面', max: 15 },
+    { name: '到面率', max: 100 },
+    { name: 'Offer数', max: 5 },
+    { name: '入职数', max: 5 },
+  ];
+
+  // Per-TL aggregated data
+  const tlData = TEAMS.map((t, idx) => {
+    const weeklyActual = TEAM_WEEKLY_ACTUAL[idx];
+    const totalActual = weeklyActual.reduce((s, v) => s + v, 0);
+    // Approximate invites (actual * 1.5~2 ratio based on overall data)
+    const totalInvite = Math.round(totalActual * 1.6);
+    const rate = totalInvite > 0 ? Math.round(totalActual / totalInvite * 100) : 0;
+    // Approximate offer/join from known data
+    const offerMap = { '白金月': 0, '项楠欣': 1, '贠海燕': 1, '黄涛': 0, '杨泽坚': 2, '刘茂铃': 2 };
+    const joinMap = { '白金月': 0, '项楠欣': 0, '贠海燕': 0, '黄涛': 1, '杨泽坚': 1, '刘茂铃': 2 };
+
+    return {
+      name: t.leader,
+      value: [totalInvite, totalActual, rate, offerMap[t.leader] || 0, joinMap[t.leader] || 0]
+    };
+  });
+
+  const radarColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+
+  const option = {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'item',
+      formatter: function(p) {
+        let s = `<b>${p.name}</b><br/>`;
+        indicators.forEach((ind, i) => {
+          s += `${ind.name}: ${p.value[i]}<br/>`;
+        });
+        return s;
+      }
+    },
+    legend: {
+      data: tlData.map(d => d.name),
+      top: 5,
+      textStyle: { color: getTextColor(), fontSize: 11 },
+    },
+    radar: {
+      indicator: indicators,
+      center: ['50%', '55%'],
+      radius: '60%',
+      axisName: { color: getTextColor(), fontSize: 11 },
+      axisLine: { lineStyle: { color: getAxisLineColor() } },
+      splitLine: { lineStyle: { color: getAxisLineColor() } },
+      splitArea: {
+        areaStyle: {
+          color: isDark
+            ? ['rgba(30,41,59,0.5)', 'rgba(51,65,85,0.3)']
+            : ['rgba(241,245,249,0.8)', 'rgba(255,255,255,0.8)']
+        }
+      }
+    },
+    series: [{
+      type: 'radar',
+      data: tlData.map((d, i) => ({
+        ...d,
+        lineStyle: { color: radarColors[i], width: 2 },
+        itemStyle: { color: radarColors[i] },
+        areaStyle: { color: radarColors[i] + '20' },
+        symbol: 'circle',
+        symbolSize: 6,
+      })),
+      animationDuration: 1000,
+    }]
+  };
+
+  chart.setOption(option);
+}
+
+// ============================================================
+// TABLE
+// ============================================================
+function renderTable() {
+  const tbody = document.getElementById('team-table-body');
+  tbody.innerHTML = '';
+
+  TEAMS.forEach(t => {
+    const gap = t.hc - t.onJob + t.leaving;
+    const fillRate = Math.round(t.onJob / t.hc * 100);
+    const urgencyClass = { '紧急': 'tag-danger', '预警': 'tag-warning', '达标': 'tag-success' }[t.urgency] || '';
+    const barColor = { '紧急': '#EF4444', '预警': '#F59E0B', '达标': '#10B981' }[t.urgency] || '#94A3B8';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:600">${t.name}</td>
+      <td>${t.leader}</td>
+      <td>${t.hc}</td>
+      <td>${t.onJob}</td>
+      <td>${t.leaving}${t.leavingDetail ? ' <span style="color:var(--text-tertiary);font-size:12px">(' + t.leavingDetail + ')</span>' : ''}</td>
+      <td>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${fillRate}%;background:${barColor}"></div></div>
+        <span style="font-weight:600">${fillRate}%</span>
+      </td>
+      <td><span class="tag ${urgencyClass}">${t.urgency}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Summary row
+  const totalHC = TEAMS.reduce((s, t) => s + t.hc, 0);
+  const totalOn = TEAMS.reduce((s, t) => s + t.onJob, 0);
+  const totalLeave = TEAMS.reduce((s, t) => s + t.leaving, 0);
+  const totalFill = Math.round(totalOn / totalHC * 100);
+
+  const tr = document.createElement('tr');
+  tr.style.fontWeight = '700';
+  tr.style.background = isDark ? '#0F172A' : '#F1F5F9';
+  tr.innerHTML = `
+    <td colspan="2">合计</td>
+    <td>${totalHC}</td>
+    <td>${totalOn}</td>
+    <td>${totalLeave}</td>
+    <td>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${totalFill}%;background:var(--color-primary)"></div></div>
+      <span>${totalFill}%</span>
+    </td>
+    <td>-</td>
+  `;
+  tbody.appendChild(tr);
+}
+
+// ============================================================
+// INIT & RESIZE
+// ============================================================
+function initAllCharts() {
+  renderFunnel();
+  renderTeamBar();
+  renderTrend();
+  renderHeatmap();
+  renderUrgency();
+  renderRadar();
+  renderTable();
+}
+
+window.addEventListener('DOMContentLoaded', initAllCharts);
+
+// Responsive resize with debounce (Rule: debounce-throttle)
+let resizeTimer;
+window.addEventListener('resize', function() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function() {
+    Object.values(charts).forEach(c => c && c.resize());
+  }, 150);
+});
+</script>
+</body>
+</html>
